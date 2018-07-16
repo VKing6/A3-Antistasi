@@ -3,7 +3,7 @@ private ["_posHQ"];
 _posHQ = getMarkerPos respawnBuenos;
 
 {
-	if ((side _x == buenos or side _x == civilian) and (_x distance _posHQ < 50)) then {
+	if ((side group _x == buenos) and (_x distance _posHQ < 50)) then {
 		if (hayACEMedical) then {
 			[_x, _x] call ace_medical_fnc_treatmentAdvanced_fullHeal;
 		} else {
