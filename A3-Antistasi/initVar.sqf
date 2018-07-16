@@ -5,7 +5,7 @@
 //Not commented lines cannot be changed.
 //Don't touch them.
 
-antistasiVersion = "v 1.1.4";
+antistasiVersion = "v 1.1.6";
 
 servidoresOficiales = ["A3-Antistasi Official EU 1","A3-Antistasi Official EU 2"];
 
@@ -17,7 +17,6 @@ distanciaSPWN1 = 1300;
 distanciaSPWN2 = 500;
 musicON = if (isMultiplayer) then {false} else {true};
 civPerc = 35;
-posHQ = getMarkerPos "respawn_guerrila";
 autoHeal = false;
 recruitCooldown = 0;
 savingClient = false;
@@ -30,13 +29,17 @@ minItems = 20;
 minOptics = 12;
 maxUnits = 140;
 
-buenos = independent;
-malos = west;
+buenos = side group petros;
+malos = if (buenos == independent) then {west} else {independent};
 muyMalos = east;
 
-colorBuenos = "colorGUER";
-colorMalos = "colorBLUFOR";
+colorBuenos = if (buenos == independent) then {"colorGUER"} else {"colorBLUFOR"};
+colorMalos = if (buenos == independent) then {"colorBLUFOR"} else {"colorGUER"};
 colorMuyMalos = "colorOPFOR";
+
+respawnBuenos = if (buenos == independent) then {"respawn_guerrila"} else {"respawn_west"};
+respawnMalos = if (buenos == independent) then {"respawn_west"} else {"respawn_guerrila"};
+posHQ = getMarkerPos respawnBuenos;
 
 allMagazines = [];
 _cfgmagazines = configFile >> "cfgmagazines";
@@ -151,17 +154,31 @@ minasAAF = if ((!hayRHS) and !hayIFA) then {["SLAMDirectionalMine_Wire_Mag","Sat
 itemsAAF = if ((!hayRHS) and !hayIFA) then {["FirstAidKit","Medikit","MineDetector","NVGoggles","ToolKit","muzzle_snds_H","muzzle_snds_L","muzzle_snds_M","muzzle_snds_B","muzzle_snds_H_MG","muzzle_snds_acp","bipod_03_F_oli","muzzle_snds_338_green","muzzle_snds_93mmg_tan","Rangefinder","Laserdesignator","ItemGPS","acc_pointer_IR","ItemRadio"]} else {if (hayRHS) then {["FirstAidKit","Medikit","MineDetector","ToolKit","ItemGPS","acc_pointer_IR","ItemRadio"]} else {["FirstAidKit","Medikit","ToolKit"]}};//possible items that spawn in AAF ammoboxes
 NVGoggles = if (!hayIFA) then {["NVGoggles_OPFOR","NVGoggles_INDEP","O_NVGoggles_hex_F","O_NVGoggles_urb_F","O_NVGoggles_ghex_F","NVGoggles_tna_F"/*,"NVGogglesB_blk_F","NVGogglesB_grn_F"/*,"NVGogglesB_gry_F"*/,"NVGoggles"]} else {[]};
 opticasAAF = if ((!hayRHS) and !hayIFA) then {["optic_Arco","optic_Hamr","optic_Aco","optic_ACO_grn","optic_Aco_smg","optic_ACO_grn_smg","optic_Holosight","optic_Holosight_smg","optic_SOS","optic_MRCO","optic_NVS","optic_Nightstalker","optic_tws","optic_tws_mg","optic_DMS","optic_Yorris","optic_MRD","optic_LRPS","optic_AMS","optic_AMS_khk","optic_AMS_snd","optic_KHS_blk","optic_KHS_hex","optic_KHS_old","optic_KHS_tan","optic_Arco_blk_F","optic_Arco_ghex_F","optic_DMS_ghex_F","optic_Hamr_khk_F","optic_ERCO_blk_F","optic_ERCO_khk_F","optic_ERCO_snd_F","optic_SOS_khk_F","optic_LRPS_tna_F","optic_LRPS_ghex_F","optic_Holosight_blk_F","optic_Holosight_khk_F","optic_Holosight_smg_blk_F"]} else {[]};
-
+swoopShutUp = ["V_RebreatherIA","G_Diving"];
 
 arrayCivVeh =["C_Hatchback_01_F","C_Hatchback_01_sport_F","C_Offroad_01_F","C_SUV_01_F","C_Van_01_box_F","C_Van_01_fuel_F","C_Van_01_transport_F","C_Truck_02_transport_F","C_Truck_02_covered_F","C_Offroad_02_unarmed_F"];//possible civ vehicles. Add any mod classnames you wish here
 squadLeaders = [];
 
 if (!hayIFA) then
 	{
-	if (!activeUSAF) then {call compile preProcessFileLineNumbers "Templates\malosVanilla.sqf"} else {call compile preProcessFileLineNumbers "Templates\malosRHSUSAF.sqf"};
+	if (!activeUSAF) then
+		{
+		call compile preProcessFileLineNumbers "Templates\malosVanilla.sqf";
+		}
+	else
+		{
+		if (buenos == independent) then {call compile preProcessFileLineNumbers "Templates\malosRHSUSAF.sqf"} else {call compile preProcessFileLineNumbers "Templates\buenosRHSUSAF.sqf"};
+		};
 	if (!activeAFRF) then {call compile preProcessFileLineNumbers "Templates\muyMalosVanilla.sqf"} else {call compile preProcessFileLineNumbers "Templates\muyMalosRHSAFRF.sqf"};
 
-	if (!activeGREF) then {call compile preProcessFileLineNumbers "Templates\buenosVanilla.sqf"} else {call compile preProcessFileLineNumbers "Templates\buenosRHSGREF.sqf"};
+	if (!activeGREF) then
+		{
+		call compile preProcessFileLineNumbers "Templates\buenosVanilla.sqf"
+		}
+	else
+		{
+		if (buenos == independent) then {call compile preProcessFileLineNumbers "Templates\buenosRHSGREF.sqf"} else {call compile preProcessFileLineNumbers "Templates\malosRHSGREF.sqf"};
+		};
 	}
 else
 	{
@@ -258,7 +275,8 @@ listbld = ["Land_Cargo_Tower_V1_F","Land_Cargo_Tower_V1_No1_F","Land_Cargo_Tower
 //Pricing values for soldiers, vehicles
 if (!isServer) exitWith {};
 
-{server setVariable [_x,75,true]} forEach sdkTier1;
+{server setVariable [_x,50,true]} forEach SDKMil;
+{server setVariable [_x,75,true]} forEach (sdkTier1 - SDKMil);
 {server setVariable [_x,100,true]} forEach  sdkTier2;
 {server setVariable [_x,150,true]} forEach sdkTier3;
 {timer setVariable [_x,0,true]} forEach (vehAttack + vehNATOAttackHelis + [vehNATOPlane,vehNATOPlaneAA,vehCSATPlane,vehCSATPlaneAA] + vehCSATAttackHelis + vehAA + vehMRLS);

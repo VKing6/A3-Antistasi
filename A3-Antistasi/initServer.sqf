@@ -1,7 +1,11 @@
 if (!isMultiplayer) exitWith {};
 if (!(isNil "serverInitDone")) exitWith {};
 diag_log "Antistasi MP Server init";
-
+caja allowDamage false;
+bandera allowDamage false;
+cajaVeh allowDamage false;
+fuego allowDamage false;
+mapa allowDamage false;
 _serverHasID = profileNameSpace getVariable ["ss_ServerID",nil];
 if(isNil "_serverHasID") then
     {
@@ -39,29 +43,18 @@ private _index = _x call jn_fnc_arsenal_itemType;
 
 loadLastSave = if (paramsArray select 0 == 1) then {true} else {false};
 autoSave = if (paramsArray select 1 == 1) then {true} else {false};
-membershipEnabled = if (paramsArray select 2 == 1) then {true} else {false};
+membershipEnabled = if (paramsArray select 2 == 1) then {true} else {false}; publicVariable "membershipEnabled";
 switchCom = if (paramsArray select 3 == 1) then {true} else {false};
-tkPunish = if (paramsArray select 4 == 1) then {true} else {false};
-distanciaMiss = paramsArray select 5;
-skillMult = paramsArray select 8;
+tkPunish = if (paramsArray select 4 == 1) then {true} else {false}; publicVariable "tkPunish";
+distanciaMiss = paramsArray select 5; publicVariable "distanciaMiss";
+skillMult = paramsArray select 8; publicVariable "skillMult";
 minWeaps = paramsArray select 9;
-civTraffic = paramsArray select 10;
+civTraffic = paramsArray select 10; publicVariable "civTraffic";
 //waitUntil {!isNil "bis_fnc_preload_init"};
 //waitUntil {!isNil "BIS_fnc_preload_server"};
 if (loadLastSave) then
     {
-    /*
-    ["firstLoad"] call fn_LoadStat;
-    if (isNil "firstLoad") then
-        {
-        ["miembros"] call fn_LoadStat;
-        if (isNil "miembros") then
-            {
-            loadLastSave = false;
-            publicVariable "loadLastSave";
-            };
-        };
-    */
+
     diag_log "Antistasi: Persitent Load selected";
     ["miembros"] call fn_LoadStat;
     if (isNil "miembros") then
@@ -85,17 +78,17 @@ if (loadLastSave) then
         publicVariable "miembros";
         sleep 3;
         };
-    stavros = objNull;
+    theBoss = objNull;
     {
     if (([_x] call isMember) and (side _x == buenos)) exitWith
         {
-        stavros = _x;
+        theBoss = _x;
         //_x setRank "CORPORAL";
         //[_x,"CORPORAL"] remoteExec ["ranksMP"];
         //_x setVariable ["score", 25,true];
         };
     } forEach playableUnits;
-    publicVariable "stavros";
+    publicVariable "theBoss";
     }
 else
     {
@@ -103,29 +96,29 @@ else
         {
         //["miembros"] call fn_LoadStat;
         call compile preprocessFileLineNumbers "orgPlayers\mList.sqf";
-        stavros = objNull;
+        theBoss = objNull;
         {
         if (([_x] call isMember) and (side _x == buenos)) exitWith
             {
-            stavros = _x;
+            theBoss = _x;
             //_x setRank "CORPORAL";
             //[_x,"CORPORAL"] remoteExec ["ranksMP"];
             //_x setVariable ["score", 25,true];
             };
         } forEach playableUnits;
-        publicVariable "stavros";
+        publicVariable "theBoss";
         }
     else
         {
-        stavros = objNull;
+        theBoss = objNull;
         diag_log "Antistasi: New Game selected";
         if (isNil "comandante") then {comandante = (playableUnits select 0)};
         if (isNull comandante) then {comandante = (playableUnits select 0)};
-        stavros = comandante;
-        publicVariable "stavros";
-        stavros setRank "CORPORAL";
-        [stavros,"CORPORAL"] remoteExec ["ranksMP"];
-        if (membershipEnabled) then {miembros = [getPlayerUID stavros]} else {miembros = []};
+        theBoss = comandante;
+        publicVariable "theBoss";
+        theBoss setRank "CORPORAL";
+        [theBoss,"CORPORAL"] remoteExec ["ranksMP"];
+        if (membershipEnabled) then {miembros = [getPlayerUID theBoss]} else {miembros = []};
         publicVariable "miembros";
         };
     _nul = [caja] call cajaAAF;
@@ -138,8 +131,8 @@ else
         }
     else
         {
-        stavros = _x;
-        publicVariable "stavros";
+        theBoss = _x;
+        publicVariable "theBoss";
         _x setRank "CORPORAL";
         [_x,"CORPORAL"] remoteExec ["ranksMP"];
         if (membershipEnabled) then {miembros = [getPlayerUID _x]} else {miembros = []};

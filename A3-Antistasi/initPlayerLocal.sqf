@@ -15,7 +15,7 @@ if (isMultiplayer) then
 		}
 	else
 		{
-		waitUntil {(!isNil "serverInitDone")};
+		waitUntil {sleep 0.5;(!isNil "serverInitDone")};
 		};
 	[] execVM "briefing.sqf";
 	};
@@ -61,7 +61,7 @@ if (isMultiplayer) then
 	}
 else
 	{
-	stavros = player;
+	theBoss = player;
 	grupo = group player;
 	if (worldName == "Tanoa") then {grupo setGroupId ["Pulu","GroupColor4"]} else {grupo setGroupId ["Stavros","GroupColor4"]};
 	player setIdentity "protagonista";
@@ -116,17 +116,19 @@ if (side player != buenos) exitWith
 	moto = objNull;
 	if ((!_isJIP) or (paramsArray select 6 != 1)) then
 		{
-		["noPvP",false,1,false,false] call BIS_fnc_endMission
+		["noPvP",false,1,false,false] call BIS_fnc_endMission;
+		diag_log "Antistasi: PvP player kicked because he is not jipping";
 		}
 	else
 		{
 		if (not([player] call isMember)) then
 			{
-			["noPvP",false,1,false,false] call BIS_fnc_endMission
+			["noPvP",false,1,false,false] call BIS_fnc_endMission;
+			diag_log "Antistasi: PvP player kicked because he is not member";
 			}
 		else
 			{
-			if ({(side _x != buenos) and (side _x != civilian)} count playableUnits > {(side _x == buenos) or (side _x == civilian)} count playableUnits) then {["noPvP",false,1,false,false] call BIS_fnc_endMission}
+			if ({(side group _x != buenos)} count playableUnits > {(side group _x == buenos)} count playableUnits) then {["noPvP",false,1,false,false] call BIS_fnc_endMission; diag_log "Antistasi: PvP player kicked because PvP players numer is equal to non PvP";}
 			};
 		};
 	if (side player == malos) then
@@ -139,7 +141,7 @@ if (side player != buenos) exitWith
 		player setVariable ["OPFORSpawn",true,true]
 		};
 	if (hayACE) then {[] call ACEpvpReDress};
-	"respawn_guerrila" setMarkerAlphaLocal 0;
+	respawnBuenos setMarkerAlphaLocal 0;
 	player addEventHandler ["GetInMan",
 		{
 		private ["_unit","_veh"];
@@ -153,6 +155,12 @@ if (side player != buenos) exitWith
 				hint format ["You are only allowed to use your Quadbike or %1 non armed vehicles",nameMalos];
 				};
 			};
+		}];
+	player addEventHandler ["InventoryOpened",
+		{
+		_override = false;
+		if (typeOf (_this select 1) == NATOAmmoBox) then {_override = true};
+		_override
 		}];
 	["TaskFailed", ["", format ["%1 joined %2 SpecOps",name player,nameMalos]]] remoteExec ["BIS_fnc_showNotification",[buenos,civilian]];
 	waituntil {!isnull (finddisplay 46)};
@@ -434,12 +442,12 @@ if (_isJip) then
 			};*/
 		if ({[_x] call isMember} count playableUnits == 1) then
 			{
-			[player] call stavrosInit;
-			[] remoteExec ["assignStavros",2];
+			[player] call theBossInit;
+			[] remoteExec ["assigntheBoss",2];
 			};
 		};
 	/*
-	if ((player == stavros) and (isNil "placementDone") and (isMultiplayer)) then
+	if ((player == theBoss) and (isNil "placementDone") and (isMultiplayer)) then
 		{
 		_nul = [] execVM "Dialogs\initMenu.sqf";
 		}
@@ -456,22 +464,39 @@ if (_isJip) then
 			_state = _x select 1;
 			if ((_tsk call BIS_fnc_taskState) != _state) then
 				{
+				/*
 				_tskVar = _tsk call BIS_fnc_taskVar;
 				_tskVar setTaskState _state;
+				*/
+				[_tsk,_state] call bis_fnc_taskSetState;
 				};
 			};
 		} forEach misiones;
 		};
-	_nul = [] execVM "Dialogs\firstLoad.sqf";
+	if (isNil "placementDone") then
+		{
+		waitUntil {!isNil "theBoss"};
+		if (player == theBoss) then
+		    {
+		    if !(loadLastSave) then
+	    		{
+	    		_nul = [] spawn placementSelection;
+	    		};
+			};
+		}
+	else
+		{
+		_nul = [] execVM "Dialogs\firstLoad.sqf";
+		};
 	diag_log "Antistasi MP Client. JIP client finished";
-	player setPos (getMarkerPos "respawn_guerrila");
+	player setPos (getMarkerPos respawnBuenos);
 	}
 else
 	{
 	if (isNil "placementDone") then
 		{
-		waitUntil {!isNil "stavros"};
-		if (player == stavros) then
+		waitUntil {!isNil "theBoss"};
+		if (player == theBoss) then
 		    {
 		    player setVariable ["score", 25,true];
 		    if (isMultiplayer) then
@@ -485,17 +510,15 @@ else
 		    		}
 		    	else
 		    		{
-		    		if !(isServer) then
-		    			{
-			    		 _nul = [true] execVM "Dialogs\firstLoad.sqf";
-			    		 player setPos (getMarkerPos "respawn_guerrila");
-			    		};
-		    		};
+		    		_nul = [true] execVM "Dialogs\firstLoad.sqf";
+			    	};
 		    	diag_log "Antistasi MP Client. Client finished";
 		    	}
 		    else
 		    	{
 		    	miembros = [];
+		    	player setUnitTrait ["medic",true];
+		    	player setUnitTrait ["engineer",true];
 		    	 _nul = [] execVM "Dialogs\firstLoad.sqf";
 		    	};
 		    }
@@ -503,7 +526,7 @@ else
 			{
 			player setVariable ["score", 0,true];
 			_nul = [true] execVM "Dialogs\firstLoad.sqf";
-			player setPos (getMarkerPos "respawn_guerrila");
+			player setPos (getMarkerPos respawnBuenos);
 			};
 		}
 	else
@@ -511,7 +534,7 @@ else
 		if !(isServer) then
 			{
 			_nul = [] execVM "Dialogs\firstLoad.sqf";
-			player setPos (getMarkerPos "respawn_guerrila");
+			player setPos (getMarkerPos respawnBuenos);
 			};
 		};
 	};
@@ -557,13 +580,40 @@ gameMenu = (findDisplay 46) displayAddEventHandler ["KeyDown",teclas];
 
 if ((!isServer) and (isMultiplayer)) then {caja call jn_fnc_arsenal_init};
 
+caja allowDamage false;
 caja addAction ["Transfer Vehicle cargo to Ammobox", "[] call vaciar"];
-caja addAction ["Move this asset", "moveHQObject.sqf",nil,0,false,true,"","(_this == stavros)"];
+caja addAction ["Move this asset", "moveHQObject.sqf",nil,0,false,true,"","(_this == theBoss)"];
+bandera addAction ["HQ Management", {[] execVM "Dialogs\dialogHQ.sqf"},nil,0,false,true,"","(_this == theBoss) and (petros == leader group petros)"];
+bandera allowDamage false;
+bandera addAction ["Unit Recruitment", {nul=[] execVM "Dialogs\unit_recruit.sqf";},nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"];
+bandera addAction ["Buy Vehicle", {nul = createDialog "vehicle_option"},nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"];
+if (isMultiplayer) then {bandera addAction ["Personal Garage", {nul = [true] spawn garage},nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"]};
+bandera addAction ["Move this asset", "moveHQObject.sqf",nil,0,false,true,"","(_this == theBoss)"];
+cajaVeh allowDamage false;
+cajaveh addAction ["Heal, Repair and Rearm", "healandrepair.sqf",nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"];
+cajaveh addAction ["Move this asset", "moveHQObject.sqf",nil,0,false,true,"","(_this == theBoss)"];
 
+fuego allowDamage false;
+fuego addAction ["Rest for 8 Hours", "skiptime.sqf",nil,0,false,true,"","(_this == theBoss)"];
+fuego addAction ["Clear Nearby Forest", "clearForest.sqf",nil,0,false,true,"","_this == theBoss"];
+fuego addAction ["On\Off Lamp", "onOffLamp.sqf",nil,0,false,true,"","(isPlayer _this) and (side (group _this) == buenos)"];
+fuego addAction ["I hate the fog", "[10,0] remoteExec [""setFog"",2]",nil,0,false,true,"","(_this == theBoss)"];
+mapa allowDamage false;
+mapa addAction ["Game Options", {hint format ["Antistasi - %2\n\nVersion: %1",antistasiVersion,worldName]; nul=CreateDialog "game_options";},nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"];
+mapa addAction ["Map Info", {nul = [] execVM "cityinfo.sqf";},nil,0,false,true,"","(isPlayer _this) and (_this == _this getVariable ['owner',objNull]) and (side (group _this) == buenos)"];
+mapa addAction ["Move this asset", "moveHQObject.sqf",nil,0,false,true,"","(_this == theBoss)"];
+if (isMultiplayer) then {mapa addAction ["AI Load Info", "[] remoteExec [""AILoadInfo"",2]",nil,0,false,true,"","(_this == theBoss)"]};
 _nul = [player] execVM "OrgPlayers\unitTraits.sqf";
+grupoPetros = group petros;
+grupoPetros setGroupId ["Petros","GroupColor4"];
+petros setIdentity "amiguete";
+petros setName "Petros";
+petros disableAI "MOVE";
+petros disableAI "AUTOTARGET";
+petros addAction ["Mission Request", {nul=CreateDialog "mission_menu";},nil,0,false,true,"","_this == theBoss"];
 
 disableSerialization;
 //1 cutRsc ["H8erHUD","PLAIN",0,false];
 _layer = ["estadisticas"] call bis_fnc_rscLayer;
 _layer cutRsc ["H8erHUD","PLAIN",0,false];
-[] call statistics;
+[] spawn statistics;

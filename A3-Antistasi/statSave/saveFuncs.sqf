@@ -4,7 +4,14 @@ fn_SaveStat =
 	_varValue = _this select 1;
 	if (!isNil "_varValue") then
 		{
-		if (worldName == "Tanoa") then {profileNameSpace setVariable [_varName + serverID + "WotP",_varValue]} else {profileNameSpace setVariable [_varName + serverID + "Antistasi" + worldName,_varValue]};
+		if (worldName == "Tanoa") then
+			{
+			profileNameSpace setVariable [_varName + serverID + "WotP",_varValue]
+			}
+		else
+			{
+			if (side group petros == independent) then {profileNameSpace setVariable [_varName + serverID + "Antistasi" + worldName,_varValue]} else {profileNameSpace setVariable [_varName + serverID + "AntistasiB" + worldName,_varValue]};
+			};
 		if (isDedicated) then {saveProfileNamespace};
 		};
 };
@@ -13,7 +20,14 @@ fn_LoadStat =
 {
 	private ["_varName","_varvalue"];
 	_varName = _this select 0;
-	if (worldName == "Tanoa") then {_varValue = profileNameSpace getVariable (_varName + serverID + "WotP")} else {_varValue = profileNameSpace getVariable (_varName + serverID + "Antistasi" + worldName)};
+	if (worldName == "Tanoa") then
+		{
+		_varValue = profileNameSpace getVariable (_varName + serverID + "WotP")
+		}
+	else
+		{
+		if (side group petros == independent) then {_varValue = profileNameSpace getVariable (_varName + serverID + "Antistasi" + worldName)} else {_varValue = profileNameSpace getVariable (_varName + serverID + "AntistasiB" + worldName)};
+		};
 	if(isNil "_varValue") exitWith {diag_log format ["Antistasi: Error en Persistent Load. La variable %1 no existe en el entorno %2",_varname,(_varName + serverID + "WotP")]};
 	[_varName,_varValue] call fn_SetStat;
 };
@@ -106,13 +120,8 @@ fn_SetStat =
 			destroyedBuildings= +_varValue;
 			//publicVariable "destroyedBuildings";
 			{
-			(nearestBuilding _x) setDamage [1,false];
-			/*
-			_buildings = nearestObjects [_x,listMilBld,50];
-			if !(_buildings isEqualto []) then
-				{
-				(_buildings Select 0) setdamage [1,false];
-				};*/
+			//(nearestBuilding _x) setDamage [1,false];
+			[nearestBuilding _x,[1,false]] remoteExec ["setDamage"];
 			} forEach destroyedBuildings;
 			};
 		if(_varName == 'minas') then
@@ -237,7 +246,7 @@ fn_SetStat =
 				lados setVariable [_x,buenos,true];
 				};
 			} forEach controles;
-			"respawn_guerrila" setMarkerPos _varValue;
+			respawnBuenos setMarkerPos _varValue;
 			petros setPos _varvalue;
 			if (chopForest) then
 				{
